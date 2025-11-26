@@ -63,11 +63,11 @@ int main(int, char**)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    // Create window with graphics context.
+    // Create mainwindow with graphics context.
     //
-    GLFWwindow* window = glfwCreateWindow(535, 500, "cclauncher", nullptr, nullptr);
-    if (window == nullptr) return 1;
-    glfwMakeContextCurrent(window);
+    GLFWwindow* mainwindow = glfwCreateWindow(535, 500, "cclauncher", nullptr, nullptr);
+    if (mainwindow == nullptr) return 1;
+    glfwMakeContextCurrent(mainwindow);
     // Create window icon using stb_image.
     //
     int icon_width, icon_height, icon_channels;
@@ -78,7 +78,7 @@ int main(int, char**)
         images[0].width = icon_width;
         images[0].height = icon_height;
         images[0].pixels = icon_pixels;
-        glfwSetWindowIcon(window, 1, images);
+        glfwSetWindowIcon(mainwindow, 1, images);
         stbi_image_free(icon_pixels);
     }
     // Enable vsync.
@@ -108,7 +108,7 @@ int main(int, char**)
 
     // Setup Platform/Renderer backends.
     //
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplGlfw_InitForOpenGL(mainwindow, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts.
@@ -146,10 +146,13 @@ int main(int, char**)
     //
     bool usernamepopup = false;
     bool launchpopup = false;
-    while (!glfwWindowShouldClose(window))
+    // boolean for the credit window at startup.
+    //
+    bool creditsmsg = true;
+    while (!glfwWindowShouldClose(mainwindow))
     {
         glfwPollEvents();
-        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
+        if (glfwGetWindowAttrib(mainwindow, GLFW_ICONIFIED) != 0)
         {
             ImGui_ImplGlfw_Sleep(10);
             continue;
@@ -168,10 +171,12 @@ int main(int, char**)
         if (launchpopup)
             ImGui::OpenPopup("Success");
 
+        ImGuiWindowFlags popup_window_flags = ImGuiWindowFlags_AlwaysAutoResize
+                              | ImGuiWindowFlags_NoMove;
         // Username error popup.
         //
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
-        if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::BeginPopupModal("Error", nullptr, popup_window_flags))
         {
             ImGui::Text("username is empty.");
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
@@ -187,7 +192,7 @@ int main(int, char**)
         // Launch success popup.
         //
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
-        if (ImGui::BeginPopupModal("Success", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::BeginPopupModal("Success", nullptr, popup_window_flags))
         {
             ImGui::Text("minecraft is launching...");
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
@@ -201,33 +206,51 @@ int main(int, char**)
         }
         ImGui::PopStyleVar();
 
-        // This section creates a fullscreen dockingspace (not used till now).
+        // Create the credit window at startup.
         //
-        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(535, 500), ImGuiCond_Always);
-        
-        ImGuiWindowFlags dock_window_flags = ImGuiWindowFlags_NoTitleBar
-                                | ImGuiWindowFlags_NoResize
-                                | ImGuiWindowFlags_NoMove
-                                | ImGuiWindowFlags_NoCollapse
-                                | ImGuiWindowFlags_NoBringToFrontOnFocus
-                                | ImGuiWindowFlags_NoNavFocus
-                                | ImGuiWindowFlags_NoSavedSettings
-                                | ImGuiWindowFlags_NoScrollbar
-                                | ImGuiWindowFlags_NoScrollWithMouse
-                                | ImGuiWindowFlags_NoBackground;
+        if (creditsmsg)
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-            ImGui::Begin("placeholder", nullptr, dock_window_flags);
-            ImGui::PopStyleVar();
+            ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Always);
+            ImGui::SetNextWindowPos(ImVec2( (535-400)/2, (500-200)/2 ), ImGuiCond_Always);
 
-            ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0,0));
+            ImGuiWindowFlags credit_window_flags = ImGuiWindowFlags_NoResize
+                                    | ImGuiWindowFlags_NoCollapse
+                                    | ImGuiWindowFlags_NoMove
+                                    | ImGuiWindowFlags_NoSavedSettings
+                                    | ImGuiWindowFlags_NoDocking;
+            {
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+                ImGui::Begin("Credits", nullptr, credit_window_flags);
 
-            ImGui::End();
+                ImGui::TextWrapped("cclauncher v1.0\ncopyright (c) 2025 cornedev\n\nThanks for using my little launcher :)");
+                
+                ImGui::SetCursorPos(ImVec2(150, 150));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+                if (ImGui::Button("OK", ImVec2(100, 30)))
+                {
+                    creditsmsg = false; // Close credits window and continue to main launcher.
+                }
+                ImGui::PopStyleVar();
+
+                ImGui::End();
+                ImGui::PopStyleVar();
+            }
+
+            // Skip rendering the rest of the launcher until credits are closed.
+            //
+            ImGui::Render();
+            int display_w, display_h;
+            glfwGetFramebufferSize(mainwindow, &display_w, &display_h);
+            glViewport(0, 0, display_w, display_h);
+            glClearColor(0.12f, 0.12f, 0.12f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            glfwSwapBuffers(mainwindow);
+
+            continue; // Skip the rest of the loop for this frame.
         }
         
-        // This section creates the launch window with username, combobox and launch button.
+        // This section creates the launch window with username input, combobox and launch button.
         //
         ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(220, 300), ImGuiCond_Once);
@@ -355,12 +378,12 @@ int main(int, char**)
 
         ImGui::Render();
         int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glfwGetFramebufferSize(mainwindow, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
         glClearColor(0.12f, 0.12f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(mainwindow);
     }
 
     // Cleanup.
@@ -368,8 +391,7 @@ int main(int, char**)
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    glfwDestroyWindow(window);
+    glfwDestroyWindow(mainwindow);
     glfwTerminate();
     return 0;
-
 }
