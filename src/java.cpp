@@ -3,7 +3,7 @@
 
 // Include headers.
 //
-#include "../include/launch.hpp"
+#include "../include/java.hpp"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -429,4 +429,5 @@ void launcher::launchprocess(const std::string& username)
     CloseHandle(pi.hThread);
     if (logconsole)
         logconsole("[Launch] Minecraft launch request sent...");
+
 }
