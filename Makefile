@@ -17,10 +17,13 @@
 EXE = cclauncher
 IMGUI_DIR = imgui
 SOURCE_DIR = src
+BUILD_DIR = build
+ICON_RC = gfx/icon.rc
+ICON_OBJ = $(BUILD_DIR)/icon.o
 SOURCES = $(SOURCE_DIR)/main.cpp $(SOURCE_DIR)/launch.cpp
 SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SOURCES += $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
-OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
+OBJS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 UNAME_S := $(shell uname -s)
 LINUX_GL_LIBS = -lGL
 
@@ -61,7 +64,7 @@ endif
 
 ifeq ($(OS), Windows_NT)
 	ECHO_MESSAGE = "MinGW"
-	LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32
+	LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32 -mwindows
 
 	CXXFLAGS += `pkg-config --cflags glfw3` -lcurl -lzip
 	CFLAGS = $(CXXFLAGS)
@@ -70,21 +73,31 @@ endif
 ##---------------------------------------------------------------------
 ## BUILD RULES
 ##---------------------------------------------------------------------
+.PHONY: build
+build: all
 
-%.o:$(SOURCE_DIR)/%.cpp
+$(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-%.o:$(IMGUI_DIR)/%.cpp
+$(ICON_OBJ): $(ICON_RC) | build
+	@mkdir -p $(dir $@)
+	windres $< -O coff -o $@
+
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-%.o:$(IMGUI_DIR)/backends/%.cpp
+$(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+$(BUILD_DIR)/%.o: $(IMGUI_DIR)/backends/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)
 
-$(EXE): $(OBJS)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS) 
+$(EXE): $(OBJS) $(ICON_OBJ)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
 
 clean:
-	rm -f $(EXE) $(OBJS)
+	rm -rf $(BUILD_DIR) $(EXE)
