@@ -72,7 +72,8 @@ void launcher::downloadfiles(const std::string& url, const std::string& outputpa
     CURL* curl = curl_easy_init();
     if (!curl)
         throw std::runtime_error("Failed to initialize curl.");
-    curl_easy_setopt(curl, CURLOPT_CAINFO, "cacert.pem");
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlcallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &file);
@@ -432,3 +433,4 @@ void launcher::launchprocess(const std::string& username)
     if (logconsole)
         logconsole("[Launch] Minecraft launch request sent...");
 }
+
