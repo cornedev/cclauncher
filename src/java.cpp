@@ -4,6 +4,9 @@
 // Include headers.
 //
 #include "../include/java.hpp"
+// Boolean for only letting one minecraft instance run.
+//
+std::atomic<bool> minecraftrunning = false;
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -420,14 +423,12 @@ void launcher::launchprocess(const std::string& username)
     //
     std::thread([=]() {
         WaitForSingleObject(pi.hProcess, INFINITE);
-
+        minecraftrunning = false;
         if (logconsole)
             logconsole("[Launch] Minecraft closed.");
-
         CloseHandle(pi.hProcess);
     }).detach();
     CloseHandle(pi.hThread);
     if (logconsole)
         logconsole("[Launch] Minecraft launch request sent...");
-
 }
