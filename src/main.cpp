@@ -275,7 +275,15 @@ int main(int, char**)
                 }
                 else
                 {
+                    if (minecraftrunning)
+                    {
+                        ImGuiLog("[Warn] Minecraft is already running.");
+                    }
+                    else
+                    {
+                    minecraftrunning = true;
                     launchpopup = true;
+
                     std::string selectedversion;
                     if (!versionitems.empty() && versionitems[selected] && std::string(versionitems[selected]).find("error") == std::string::npos)
                         selectedversion = versionitems[selected];
@@ -291,10 +299,10 @@ int main(int, char**)
                     launcher* launcherinstance = !selectedversion.empty() ? new launcher(selectedversion, ImGuiLog) : new launcher("1.21", ImGuiLog);
                     launcherglobal = launcherinstance;
                     launcher* threadlauncher = launcherinstance;
-
                     std::thread([threadlauncher, username]() {
                         threadlauncher->launchprocess(username);
                     }).detach();
+                    }
                 }
             }
             ImGui::PopStyleVar();
