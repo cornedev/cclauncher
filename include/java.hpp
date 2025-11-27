@@ -13,9 +13,11 @@
 #include <string>
 #include <thread>
 #include <windows.h>
+#include <atomic>
 #include <curl/curl.h>
 #include <zip.h>
 #include <nlohmann/json.hpp>
+extern std::atomic<bool> minecraftrunning;
 
 class launcher
 {
